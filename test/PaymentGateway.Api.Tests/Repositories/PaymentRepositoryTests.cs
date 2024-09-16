@@ -26,8 +26,8 @@ namespace PaymentGateway.Api.Tests.Repositories
         private readonly PostPaymentRequestDto _postPaymentRequestDto;
         private HttpResponseMessage _httpResponseMessage;
         private const string AuthorizationCode = "551231213123";
-        private bool Authorized = true;
-        private HttpStatusCode httpStatusCode = HttpStatusCode.OK;
+        private readonly bool _authorized = true;
+        private HttpStatusCode _httpStatusCode = HttpStatusCode.OK;
 
 
         public PaymentRepositoryTests()
@@ -46,12 +46,12 @@ namespace PaymentGateway.Api.Tests.Repositories
             _postToBankResponse = new PostToBankResponse()
             {
                 AuthorizationCode = AuthorizationCode,
-                Authorized = Authorized,
+                Authorized = _authorized,
             };
 
             _httpResponseMessage = new HttpResponseMessage()
             {
-                StatusCode = httpStatusCode,
+                StatusCode = _httpStatusCode,
                 Content = new StringContent(JsonSerializer.Serialize(_postToBankResponse))
             };
             _mockHttpMessageHandler = new Mock<HttpMessageHandler>();
@@ -85,8 +85,8 @@ namespace PaymentGateway.Api.Tests.Repositories
 
             // Assert
             Assert.True(result.IsSuccess);
-            Assert.Equal(AuthorizationCode, result.PostToBankResponse.AuthorizationCode);
-            Assert.True(result.PostToBankResponse.Authorized);
+            Assert.Equal(AuthorizationCode, result.Content.AuthorizationCode);
+            Assert.True(result.Content.Authorized);
         }
 
         [Fact]
@@ -97,7 +97,7 @@ namespace PaymentGateway.Api.Tests.Repositories
             _postToBankResponse.AuthorizationCode = string.Empty;
             _httpResponseMessage = new HttpResponseMessage()
             {
-                StatusCode = HttpStatusCode.BadRequest,
+                StatusCode = HttpStatusCode.OK,
                 Content = new StringContent(JsonSerializer.Serialize(_postToBankResponse))
             };
 
@@ -105,9 +105,8 @@ namespace PaymentGateway.Api.Tests.Repositories
             var result = await _paymentRepository.PostAsync(_postPaymentRequestDto);
 
             // Assert
-            Assert.False(result.IsSuccess);
-            Assert.False(result.PostToBankResponse.Authorized);
-            Assert.Contains("Error while processing payment, bank returned error", result.ErrorMessage);
+            Assert.True(result.IsSuccess);
+            Assert.False(result.Content.Authorized);
         }
 
         // bank endpoint down or any other error occurs
@@ -122,7 +121,7 @@ namespace PaymentGateway.Api.Tests.Repositories
 
             // Assert
             Assert.False(result.IsSuccess);
-            Assert.Null(result.PostToBankResponse);
+            Assert.Null(result.Content);
             Assert.Contains("An unexpected error occurred", result.ErrorMessage);
         }
 
@@ -143,7 +142,7 @@ namespace PaymentGateway.Api.Tests.Repositories
 
             // Assert
             Assert.True(result.IsSuccess);
-            Assert.NotNull(result.GetPaymentResponse);
+            Assert.NotNull(result.Content);
         }
 
         [Fact]
@@ -162,8 +161,8 @@ namespace PaymentGateway.Api.Tests.Repositories
 
             // Assert
             Assert.False(result.IsSuccess);
-            Assert.Contains("Payment not found", result.ErrorMessage);
-            Assert.Null(result.GetPaymentResponse?.Id);
+            Assert.Contains("Failed to get payment details", result.ErrorMessage);
+            Assert.Null(result.Content?.Id);
             Assert.Equal(HttpStatusCode.NotFound, result.StatusCode);
         }
 
@@ -179,8 +178,8 @@ namespace PaymentGateway.Api.Tests.Repositories
 
             // Assert
             Assert.False(result.IsSuccess);
-            Assert.Null(result.GetPaymentResponse);
-            Assert.Contains("Unexpected error occurred", result.ErrorMessage);
+            Assert.Null(result.Content);
+            Assert.Contains("An error occurred while getting", result.ErrorMessage);
             Assert.Equal(HttpStatusCode.InternalServerError, result.StatusCode);
         }
     }

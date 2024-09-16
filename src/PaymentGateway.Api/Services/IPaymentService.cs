@@ -1,11 +1,11 @@
 ﻿using PaymentGateway.Api.Models.Requests;
-using PaymentGateway.Api.Models.Results;
+using PaymentGateway.Api.Models.Responses;
 
 namespace PaymentGateway.Api.Services
 {
     public interface IPaymentService
     {
-        Task<PostPaymentResult> PostPaymentAsync(PostPaymentRequest postPaymentRequest);
-        Task<GetPaymentResult> GetPaymentByIdAsync(Guid id);
+        Task<PostPaymentResponse> PostPaymentAsync(PostPaymentRequest postPaymentRequest);
+        Task<ServiceResult<GetPaymentResponse>> GetPaymentByIdAsync(Guid id);
     }
 }

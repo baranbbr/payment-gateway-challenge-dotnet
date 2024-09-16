@@ -14,32 +14,42 @@ namespace PaymentGateway.Api.Controllers;
 public class PaymentController(IPaymentService paymentService) : ControllerBase
 {
     [HttpPost]
-    public async Task<ActionResult<PostPaymentResponse>> PostPaymentAsync([FromBody] PostPaymentRequest postPaymentRequest)
+    public async Task<IActionResult> PostPaymentAsync([FromBody] PostPaymentRequest postPaymentRequest)
     {
         if (!ModelState.IsValid)
         {
-            return new ActionResult<PostPaymentResponse>(new PostPaymentResponse(postPaymentRequest, PaymentStatus.Rejected.ToString()));
+            var errors = ModelState.SelectMany(x => x.Value.Errors)
+                           .Select(x => x.ErrorMessage)
+                           .ToList();
+
+            return BadRequest(new PostPaymentResponse()
+            {
+                Status = PaymentStatus.Rejected.ToString(),
+                ErrorMessage = string.Join("; ", errors)
+            });
         }
         var response = await paymentService.PostPaymentAsync(postPaymentRequest);
-        return response.IsSuccess
-            ? new ActionResult<PostPaymentResponse>(response.PostPaymentResponse)
-            : (ActionResult<PostPaymentResponse>)BadRequest(response.ErrorMessage);
+        return response.Status == PaymentStatus.Rejected.ToString()
+            ? BadRequest(response)
+            : Ok(response);
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<ActionResult<GetPaymentResponse>> GetPaymentAsync(Guid id)
+    public async Task<IActionResult> GetPaymentAsync(Guid id)
     {
-        if (!ModelState.IsValid) { return BadRequest("Error"); }
-
         var response = await paymentService.GetPaymentByIdAsync(id);
-        switch (response.StatusCode)
+        if (!response.IsSuccess)
         {
-            case HttpStatusCode.OK:
-                return new ActionResult<GetPaymentResponse>(response.GetPaymentResponse);
-            case HttpStatusCode.NotFound:
-                return NotFound(response?.ErrorMessage);
-            default:
-                return BadRequest(response?.ErrorMessage);
+            switch (response.StatusCode)
+            {
+                case HttpStatusCode.NotFound:
+                    return NotFound($"Payment with Id:{id} could not be found");
+                case HttpStatusCode.InternalServerError:
+                    return StatusCode((int)HttpStatusCode.InternalServerError, response?.ErrorMessage);
+                default:
+                    return BadRequest(response?.ErrorMessage);
+            }
         }
+        return Ok(response.Content);
     }
 }
