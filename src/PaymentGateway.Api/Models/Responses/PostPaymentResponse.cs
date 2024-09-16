@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace PaymentGateway.Api.Models.Responses;
 
 public class PostPaymentResponse
