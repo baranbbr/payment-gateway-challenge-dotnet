@@ -15,7 +15,6 @@ namespace PaymentGateway.Api.Tests.Services
         private readonly PaymentService _paymentService;
         private readonly Mock<IPaymentRepository> _paymentRepository;
         private readonly Mock<ILogger<PaymentService>> _logger;
-        private readonly PostPaymentRequestDto _postPaymentRequestDto;
         private readonly PostPaymentRequest _postPaymentRequest;
         private readonly ServiceResult<PostToBankResponse> _postToBankResponse;
         private const string AuthorizationCode = "1231231";
@@ -40,7 +39,6 @@ namespace PaymentGateway.Api.Tests.Services
                 Content = new PostToBankResponse() { AuthorizationCode = AuthorizationCode, Authorized = Authorized }
             };
 
-            _postPaymentRequestDto = new PostPaymentRequestDto(_postPaymentRequest);
             _logger = new Mock<ILogger<PaymentService>>();
 
             _paymentRepository = new Mock<IPaymentRepository>();
