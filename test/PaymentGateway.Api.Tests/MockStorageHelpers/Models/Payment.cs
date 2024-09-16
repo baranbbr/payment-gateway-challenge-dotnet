@@ -2,7 +2,6 @@
 
 namespace PaymentGateway.Api.Tests.MockStorageHelpers.Models
 {
-    // defining duplicate separate class as this shouldnt exist
     public class Payment
     {
         public Guid Id { get; set; }

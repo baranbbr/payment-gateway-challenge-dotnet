@@ -16,9 +16,8 @@ namespace PaymentGateway.Api.Tests.Services
         private readonly Mock<IPaymentRepository> _paymentRepository;
         private readonly Mock<ILogger<PaymentService>> _logger;
         private readonly PostPaymentRequestDto _postPaymentRequestDto;
-        private readonly PostToBankResult _postToBankResult;
         private readonly PostPaymentRequest _postPaymentRequest;
-        private readonly PostToBankResponse _postToBankResponse;
+        private readonly ServiceResult<PostToBankResponse> _postToBankResponse;
         private const string AuthorizationCode = "1231231";
         private const bool Authorized = true;
 
@@ -34,19 +33,19 @@ namespace PaymentGateway.Api.Tests.Services
                 ExpiryYear = DateTime.Now.Year + 100
             };
 
-            _postToBankResponse = new PostToBankResponse()
+            _postToBankResponse = new ServiceResult<PostToBankResponse>()
             {
-                AuthorizationCode = AuthorizationCode,
-                Authorized = Authorized
+                IsSuccess = true,
+                StatusCode = System.Net.HttpStatusCode.OK,
+                Content = new PostToBankResponse() { AuthorizationCode = AuthorizationCode, Authorized = Authorized }
             };
 
-            _postToBankResult = new PostToBankResult(true, _postToBankResponse);
             _postPaymentRequestDto = new PostPaymentRequestDto(_postPaymentRequest);
             _logger = new Mock<ILogger<PaymentService>>();
 
             _paymentRepository = new Mock<IPaymentRepository>();
             _paymentRepository.Setup(x => x.PostAsync(It.IsAny<PostPaymentRequestDto>()))
-                .ReturnsAsync(() => _postToBankResult);
+                .ReturnsAsync(() => _postToBankResponse);
             _paymentService = new PaymentService(_logger.Object, _paymentRepository.Object);
         }
 
@@ -61,9 +60,9 @@ namespace PaymentGateway.Api.Tests.Services
             var result = await _paymentService.PostPaymentAsync(_postPaymentRequest);
 
             // Assert
-            Assert.True(result.IsSuccess);
-            Assert.Equal(expectedCardNumberLastFour, result.PostPaymentResponse.CardNumberLastFour);
-            Assert.Equal(expectedAmount, result.PostPaymentResponse.Amount);
+            Assert.Equal(PaymentStatus.Authorized.ToString(), result.Status);
+            Assert.Equal(expectedCardNumberLastFour, result.CardNumberLastFour);
+            Assert.Equal(expectedAmount, result.Amount);
         }
 
         [Fact]
@@ -79,27 +78,24 @@ namespace PaymentGateway.Api.Tests.Services
 
             // Assert
             Assert.Contains(expectedErrorMessage, result.ErrorMessage);
-            Assert.False(result.IsSuccess);
-            Assert.True(result.PostPaymentResponse.Status == PaymentStatus.Rejected.ToString());
+            Assert.Equal(PaymentStatus.Rejected.ToString(), result.Status);
         }
 
         [Fact]
-        public async Task ProcessPaymentAsync_Should_ReturnFailure_WhenPaymentNotAuthorized()
+        public async Task ProcessPaymentAsync_Should_ReturnDeclined_WhenPaymentNotAuthorized()
         {
             // Arrange
-            _postToBankResponse.Authorized = false;
-            _postToBankResponse.AuthorizationCode = string.Empty;
+            _postToBankResponse.Content.Authorized = false;
+            _postToBankResponse.Content.AuthorizationCode = string.Empty;
 
-            var postToBankResult = new PostToBankResult(false, _postToBankResponse);
             _paymentRepository.Setup(x => x.PostAsync(It.IsAny<PostPaymentRequestDto>()))
-                .ReturnsAsync(() => postToBankResult);
+                .ReturnsAsync(() => _postToBankResponse);
 
             // Act
             var result = await _paymentService.PostPaymentAsync(_postPaymentRequest);
 
             // Assert
-            Assert.False(result.IsSuccess);
-            Assert.True(result.PostPaymentResponse.Status == PaymentStatus.Declined.ToString());
+            Assert.True(result.Status == PaymentStatus.Declined.ToString());
         }
     }
 }
