@@ -1,7 +1,7 @@
 ﻿using System.Text.Json;
 
 using PaymentGateway.Api.Constants.Enums;
-using PaymentGateway.Api.Tests.MockStorageHelpers.Models;
+using PaymentGateway.Api.Models.Responses;
 
 namespace PaymentGateway.Api.Tests.MockStorageHelpers
 {
@@ -10,7 +10,7 @@ namespace PaymentGateway.Api.Tests.MockStorageHelpers
         public static string GenerateRandomPaymentAsString(Guid id)
         {
             var random = new Random();
-            var payment = new Payment()
+            var payment = new GetPaymentResponse()
             {
                 Id = id,
                 Amount = (int)GenerateRandomNumber(1, 5),
