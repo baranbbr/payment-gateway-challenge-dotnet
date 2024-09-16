@@ -17,7 +17,6 @@ public class PaymentControllerTests
     private readonly PaymentController _paymentController;
     private readonly Mock<IPaymentService> _mockPaymentService;
     private readonly PostPaymentRequest _postPaymentRequest;
-    private readonly PostToBankResponse _postToBankResponse;
     private readonly PostPaymentResponse _postPaymentResponse;
     private readonly ServiceResult<GetPaymentResponse> _getPaymentResponse;
 
@@ -31,12 +30,6 @@ public class PaymentControllerTests
             Amount = 100,
             Currency = "GBP",
             Cvv = "123"
-        };
-
-        _postToBankResponse = new PostToBankResponse()
-        {
-            AuthorizationCode = "1231231",
-            Authorized = true
         };
 
         _getPaymentResponse = new ServiceResult<GetPaymentResponse>()
